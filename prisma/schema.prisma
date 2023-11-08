@@ -14,17 +14,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
 
 // Necessary for Next auth
 model Account {
@@ -60,10 +49,17 @@ model User {
     emailVerified DateTime?
     image         String?
     accounts      Account[]
+    tweets        Tweet[]
     sessions      Session[]
-    posts         Post[]
 }
-
+model Tweet{
+    id            String    @id @default(cuid())
+    text          String
+    author        User      @relation(fields: [authorId], references: [id])
+    authorId      String
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+}
 model VerificationToken {
     identifier String
     token      String   @unique

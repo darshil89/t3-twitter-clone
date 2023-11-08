@@ -32,3 +32,5 @@ Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/ver
 https://discord.com/developers/applications
 
 reirect : http://localhost:3000/api/auth/callback/discord
+
+npm prisma db seed
