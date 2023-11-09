@@ -2,23 +2,50 @@ import { RouterOutputs, api } from "~/utils/api";
 import { CreateTweets } from "./CreateTweets";
 import Image from "next/image";
 import Tweet from "./Tweet";
+import { useEffect, useState } from "react";
+
+function useScrollPosition() {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const handleScroll = () => {
+    const height =
+      document.documentElement.scrollHeight -
+      document.documentElement.clientHeight;
+
+    const winscroll =
+      document.body.scrollTop || document.documentElement.scrollTop;
+
+    const scrolled = (winscroll / height) * 100;
+
+    setScrollPosition(scrolled);
+  };
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return scrollPosition;
+}
 
 export function Timeline() {
   const { data, hasNextPage, fetchNextPage, isFetching } =
     api.tweets.timeline.useInfiniteQuery(
       {
-        limit: 3,
+        limit: 9,
       },
       {
         getNextPageParam: (lastPage) => lastPage.nextcursor,
       },
     );
 
+  const scrollPosition = useScrollPosition();
+
   const tweets = data?.pages.flatMap((page) => page.tweets) ?? [];
 
-  console.log("data", data);
-
-  console.log("tweets", tweets);
+  useEffect(() => {
+    if (scrollPosition > 90 && hasNextPage && !isFetching) {
+      fetchNextPage();
+    }
+  }, [scrollPosition, hasNextPage, isFetching]);
   return (
     <div>
       <CreateTweets />
@@ -27,16 +54,25 @@ export function Timeline() {
           return <Tweet key={tweet.id} tweet={tweet} />;
         })}
 
-        <button
-          onClick={() => fetchNextPage()}
-          disabled={isFetching}
-        >
+        {isFetching && (
+          <div className="flex justify-center ">
+            <p className="text-gray-400 text-xl mb-4">Loading...</p>
+          </div>
+        )}
+
+        {!hasNextPage && (
+          <div className="flex justify-center ">
+            <p className="text-gray-400 text-xl mb-4">No more tweets</p>
+          </div>
+        )}
+
+        {/* <button onClick={() => fetchNextPage()} disabled={isFetching}>
           {isFetching
             ? "Loading..."
             : hasNextPage
             ? "Load More"
             : "Nothing more to load"}
-        </button>
+        </button> */}
       </div>
     </div>
   );
