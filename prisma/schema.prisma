@@ -49,7 +49,7 @@ model User {
     emailVerified DateTime?
     image         String?
     accounts      Account[]
-    tweets        Tweet[]
+    tweet        Tweet[]
     sessions      Session[]
 }
 model Tweet{

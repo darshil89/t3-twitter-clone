@@ -34,15 +34,35 @@ export const tweetRouter = createTRPCRouter({
         const { db } = ctx;
         const { cursor, limit } = input;
         const tweets = await db.tweet.findMany({
+            take: limit + 1,
             orderBy: [
                 {
                     createdAt: 'desc'
                 }
-            ]
+            ],
+            cursor: cursor ? { id: cursor } : undefined,
+            include: {
+                author: {
+                    select: {
+                        name: true,
+                        image: true,
+                        id: true
+                    }
+                }
+
+            }
         })
 
+        let nextcursor: typeof cursor | undefined = undefined;
+        if (tweets.length > limit) {
+            const nextItem = tweets.pop() as typeof tweets[number];
+
+            nextcursor = nextItem.createdAt.toISOString();
+        }
+
         return {
-            tweets
+            tweets,
+            nextcursor
         }
 
     })
