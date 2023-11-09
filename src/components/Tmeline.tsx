@@ -3,6 +3,7 @@ import { CreateTweets } from "./CreateTweets";
 import Image from "next/image";
 import Tweet from "./Tweet";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 function useScrollPosition() {
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -41,6 +42,8 @@ export function Timeline() {
 
   const tweets = data?.pages.flatMap((page) => page.tweets) ?? [];
 
+  const client = useQueryClient();
+
   useEffect(() => {
     if (scrollPosition > 90 && hasNextPage && !isFetching) {
       fetchNextPage();
@@ -51,7 +54,7 @@ export function Timeline() {
       <CreateTweets />
       <div className=" border-l-2 border-r-2 border-t-2 border-gray-500">
         {tweets.map((tweet) => {
-          return <Tweet key={tweet.id} tweet={tweet} />;
+          return <Tweet key={tweet.id} tweet={tweet} client={client}/>;
         })}
 
         {isFetching && (

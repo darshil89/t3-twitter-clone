@@ -3,7 +3,8 @@ import Image from "next/image";
 import relativeTime from "dayjs/plugin/relativeTime";
 import updateLocale from "dayjs/plugin/updateLocale";
 import { AiFillHeart } from "react-icons/ai";
-import { api } from "~/utils/api";
+import { RouterOutputs, api } from "~/utils/api";
+import { InfiniteData, QueryClient } from "@tanstack/react-query";
 dayjs.extend(relativeTime);
 dayjs.extend(updateLocale);
 dayjs.updateLocale("en", {
@@ -24,9 +25,71 @@ dayjs.updateLocale("en", {
   },
 });
 
-export default function Tweet({ tweet }: any) {
-  const likeMutation = api.tweets.like.useMutation().mutateAsync;
-  const unlikeMutation = api.tweets.unlike.useMutation().mutateAsync;
+function updateCache({
+  client,
+  data,
+  variables,
+  action,
+}: {
+  client: QueryClient;
+  variables: { tweetId: string };
+  data: any;
+  action: "like" | "unlike";
+}) {
+  client.setQueryData(
+    [
+      ["tweets", "timeline"],
+      {
+        input: {
+          limit: 10,
+        },
+        type: "infinite",
+      },
+    ],
+    (oldData) => {
+      const newData = oldData as InfiniteData<
+        RouterOutputs["tweets"]["timeline"]
+      >;
+
+      const newTweets = newData?.pages?.map((page) => {
+        return {
+          tweets: page.tweets.map((tweet) => {
+            if (tweet.id === variables.tweetId) {
+              return {
+                ...tweet,
+                likes: action === "like" ? [data.userId] : [],
+              };
+            }
+            return tweet;
+          }),
+        };
+      });
+
+      return {
+        ...newData,
+        pages: newTweets,
+      };
+    },
+  );
+}
+
+export default function Tweet({
+  tweet,
+  client,
+}: {
+  tweet: any;
+  client: QueryClient;
+}) {
+  const likeMutation = api.tweets.like.useMutation({
+    onSuccess: (data, variables) => {
+      updateCache({ client, data, variables, action: "like" });
+    },
+  }).mutateAsync;
+  const unlikeMutation = api.tweets.unlike.useMutation({
+    onSuccess: (data, variables) => {
+      updateCache({ client, data, variables, action: "unlike" });
+    },
+  }).mutateAsync;
 
   console.log(tweet);
   const hasLIked = tweet.likes?.length > 0;
@@ -68,7 +131,6 @@ export default function Tweet({ tweet }: any) {
             likeMutation({ tweetId: tweet.id });
           }}
         />
-        <span className="text-sm text-gray-500">10</span>
       </div>
     </div>
   );
