@@ -33,6 +33,7 @@ export const tweetRouter = createTRPCRouter({
     ).query(async ({ ctx, input }) => {
         const { db } = ctx;
         const { cursor, limit } = input;
+        const userId = ctx.session?.user?.id;
         const tweets = await db.tweet.findMany({
             take: limit + 1,
             orderBy: [
@@ -42,6 +43,15 @@ export const tweetRouter = createTRPCRouter({
             ],
             cursor: cursor ? { id: cursor } : undefined,
             include: {
+                likes: {
+                    where: {
+                        userId
+                    },
+                    select: {
+                        userId: true
+                    }
+
+                },
                 author: {
                     select: {
                         name: true,
@@ -65,5 +75,46 @@ export const tweetRouter = createTRPCRouter({
             nextcursor
         }
 
-    })
+    }),
+
+    like: protectedProcedure.input(z.object({ tweetId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const usedId = ctx.session.user.id;
+
+            const { db } = ctx;
+
+            return db.like.create({
+                data: {
+                    tweet: {
+                        connect: {
+                            id: input.tweetId
+                        }
+                    },
+                    user: {
+                        connect: {
+                            id: usedId
+                        }
+                    }
+                }
+            })
+
+        }),
+
+    unlike: protectedProcedure.input(z.object({ tweetId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const usedId = ctx.session.user.id;
+
+            const { db } = ctx;
+
+            return db.like.delete({
+                where: {
+                    tweetId_userId: {
+                        tweetId: input.tweetId,
+                        userId: usedId
+                    }
+                }
+            })
+        })
+
+
 })

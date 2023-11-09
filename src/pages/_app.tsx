@@ -19,6 +19,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <Component {...pageProps} />
         </main>
       </Container>
+
       <LoggedOutBanner />
     </SessionProvider>
   );
