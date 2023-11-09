@@ -57,7 +57,7 @@ export const tweetRouter = createTRPCRouter({
         if (tweets.length > limit) {
             const nextItem = tweets.pop() as typeof tweets[number];
 
-            nextcursor = nextItem.createdAt.toISOString();
+            nextcursor = nextItem.id;
         }
 
         return {
